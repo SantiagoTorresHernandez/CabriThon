@@ -2,13 +2,10 @@ namespace CabriThon.Core.Models;
 
 public class OrderItem
 {
-    public Guid Id { get; set; }
-    public Guid OrderId { get; set; }
-    public Guid ProductId { get; set; }
+    public long OrderItemId { get; set; }
+    public long OrderId { get; set; }
+    public long ProductId { get; set; }
     public int Quantity { get; set; }
-    public decimal UnitPrice { get; set; }
-    public decimal Subtotal { get; set; }
-    public DateTime CreatedAt { get; set; }
     
     // Navigation properties
     public Order? Order { get; set; }

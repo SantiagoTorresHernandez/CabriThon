@@ -2,24 +2,37 @@ namespace CabriThon.Core.Models;
 
 public class User
 {
-    public Guid Id { get; set; }
-    public string FirebaseUid { get; set; } = string.Empty;
+    public int UserId { get; set; }
+    public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
-    public string Role { get; set; } = string.Empty; // Customer, StoreOwner, Admin
-    public Guid? StoreId { get; set; }
-    public string? FullName { get; set; }
-    public string? Phone { get; set; }
+    public string PasswordHash { get; set; } = string.Empty;
+    public int? RoleId { get; set; }
+    public int? ClientId { get; set; }
+    public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public DateTime? LastLogin { get; set; }
+    public Guid? AuthUserId { get; set; } // Firebase Auth UID
     
     // Navigation properties
-    public Store? Store { get; set; }
+    public Role? Role { get; set; }
+    public Client? Client { get; set; }
 }
 
-public static class UserRoles
+public class Role
 {
-    public const string Customer = "Customer";
-    public const string StoreOwner = "StoreOwner";
-    public const string Admin = "Admin";
+    public int RoleId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    
+    // Navigation properties
+    public List<Permission> Permissions { get; set; } = new();
+}
+
+public class Permission
+{
+    public int PermissionId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Module { get; set; }
+    public string? Description { get; set; }
 }
 

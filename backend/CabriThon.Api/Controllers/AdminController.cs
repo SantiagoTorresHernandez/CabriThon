@@ -33,42 +33,41 @@ public class AdminController : ControllerBase
         try
         {
             var dcStock = await _stockRepository.GetDistributionCenterStockAsync();
-            var allStock = await _stockRepository.GetAllStockAsync();
+            var allClientStock = await _stockRepository.GetAllClientStockAsync();
             var allOrders = await _orderRepository.GetAllOrdersAsync(100);
-            var allProducts = await _productRepository.GetAllActiveProductsAsync();
+            var allProducts = await _productRepository.GetAllProductsAsync();
 
             var dcStockList = dcStock.ToList();
-            var allStockList = allStock.ToList();
+            var clientStockList = allClientStock.ToList();
             var orderList = allOrders.ToList();
             var productList = allProducts.ToList();
 
-            // Calculate store summaries
-            var storeSummaries = allStockList
-                .GroupBy(s => new { s.StoreId, s.StoreName })
-                .Select(g => new StoreInventorySummary
+            // Calculate client summaries
+            var clientSummaries = clientStockList
+                .GroupBy(s => new { s.ClientId, s.ClientName })
+                .Select(g => new ClientInventorySummary
                 {
-                    StoreId = g.Key.StoreId,
-                    StoreName = g.Key.StoreName,
+                    ClientId = g.Key.ClientId,
+                    ClientName = g.Key.ClientName,
                     TotalProducts = g.Count(),
-                    TotalQuantity = g.Sum(s => s.Quantity),
-                    TotalValue = g.Sum(s => s.Quantity * (productList.FirstOrDefault(p => p.Id == s.ProductId)?.Price ?? 0))
+                    TotalQuantity = g.Sum(s => s.Stock),
+                    TotalValue = g.Sum(s => s.Stock * (productList.FirstOrDefault(p => p.ProductId == s.ProductId)?.Cost ?? 0))
                 })
                 .ToList();
 
             var result = new AdminInventoryDto
             {
                 DistributionCenterStock = dcStockList,
-                AllStock = allStockList,
-                StoreInventories = storeSummaries,
+                AllClientStock = clientStockList,
+                ClientInventories = clientSummaries,
                 GlobalMetrics = new GlobalMetricsDto
                 {
-                    TotalStores = storeSummaries.Count,
-                    TotalProducts = productList.Count,
-                    TotalStockQuantity = allStockList.Sum(s => s.Quantity),
-                    DistributionCenterQuantity = dcStockList.Sum(s => s.Quantity),
-                    TotalInventoryValue = storeSummaries.Sum(s => s.TotalValue),
-                    TotalOrders = orderList.Count,
-                    TotalRevenue = orderList.Where(o => o.Status != "Cancelled").Sum(o => o.TotalAmount)
+                    TotalClients = clientSummaries.Count,
+                    TotalProducts = productList.Count(),
+                    TotalClientStockQuantity = clientStockList.Sum(s => s.Stock),
+                    DistributionCenterQuantity = dcStockList.Sum(s => s.Stock),
+                    TotalInventoryValue = clientSummaries.Sum(s => s.TotalValue),
+                    TotalOrders = orderList.Count()
                 }
             };
 
@@ -81,24 +80,41 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Get comprehensive view of all inventory across all stores
+    /// Get comprehensive view of all client inventory
     /// </summary>
-    [HttpGet("inventory/all")]
-    public async Task<IActionResult> GetAllInventory()
+    [HttpGet("inventory/clients")]
+    public async Task<IActionResult> GetAllClientInventory()
     {
         try
         {
-            var allStock = await _stockRepository.GetAllStockAsync();
+            var allStock = await _stockRepository.GetAllClientStockAsync();
             return Ok(allStock);
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Error retrieving all inventory", error = ex.Message });
+            return StatusCode(500, new { message = "Error retrieving all client inventory", error = ex.Message });
         }
     }
 
     /// <summary>
-    /// Get all orders across all stores
+    /// Get CEDI (distribution center) inventory
+    /// </summary>
+    [HttpGet("inventory/cedi")]
+    public async Task<IActionResult> GetCediInventory()
+    {
+        try
+        {
+            var cediStock = await _stockRepository.GetDistributionCenterStockAsync();
+            return Ok(cediStock);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error retrieving CEDI inventory", error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get all orders across all clients
     /// </summary>
     [HttpGet("orders")]
     public async Task<IActionResult> GetAllOrders([FromQuery] int limit = 100)
@@ -115,10 +131,10 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Update stock for any store (admin override)
+    /// Update client stock (admin override)
     /// </summary>
-    [HttpPost("inventory/update")]
-    public async Task<IActionResult> UpdateStock([FromBody] UpdateStockRequest request, [FromQuery] Guid storeId)
+    [HttpPost("inventory/client/update")]
+    public async Task<IActionResult> UpdateClientStock([FromBody] UpdateStockRequest request, [FromQuery] int clientId)
     {
         try
         {
@@ -127,23 +143,53 @@ public class AdminController : ControllerBase
                 return BadRequest(new { message = "Quantity cannot be negative" });
             }
 
-            var success = await _stockRepository.UpdateStockQuantityAsync(
+            var success = await _stockRepository.UpdateClientStockQuantityAsync(
                 request.ProductId,
-                storeId,
-                request.Quantity,
-                null // Admin update, no specific user
+                clientId,
+                request.Quantity
             );
 
             if (!success)
             {
-                return StatusCode(500, new { message = "Failed to update stock" });
+                return StatusCode(500, new { message = "Failed to update client stock" });
             }
 
-            return Ok(new { message = "Stock updated successfully" });
+            return Ok(new { message = "Client stock updated successfully" });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Error updating stock", error = ex.Message });
+            return StatusCode(500, new { message = "Error updating client stock", error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Update CEDI stock (admin override)
+    /// </summary>
+    [HttpPost("inventory/cedi/update")]
+    public async Task<IActionResult> UpdateCediStock([FromBody] UpdateStockRequest request)
+    {
+        try
+        {
+            if (request.Quantity < 0)
+            {
+                return BadRequest(new { message = "Quantity cannot be negative" });
+            }
+
+            var success = await _stockRepository.UpdateCediStockQuantityAsync(
+                request.ProductId,
+                request.Quantity
+            );
+
+            if (!success)
+            {
+                return StatusCode(500, new { message = "Failed to update CEDI stock" });
+            }
+
+            return Ok(new { message = "CEDI stock updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error updating CEDI stock", error = ex.Message });
         }
     }
 }

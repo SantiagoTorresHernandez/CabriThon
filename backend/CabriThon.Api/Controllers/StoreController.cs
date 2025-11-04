@@ -8,7 +8,7 @@ namespace CabriThon.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Policy = "StoreOwner")]
+[Authorize(Policy = "ClientOwner")]
 public class StoreController : ControllerBase
 {
     private readonly IStockRepository _stockRepository;
@@ -26,44 +26,43 @@ public class StoreController : ControllerBase
     }
 
     /// <summary>
-    /// Get inventory dashboard for the authenticated store owner's store
+    /// Get inventory dashboard for the authenticated client owner
     /// </summary>
     [HttpGet("inventory")]
     public async Task<IActionResult> GetInventory()
     {
         try
         {
-            var firebaseUid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(firebaseUid))
+            var authUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(authUserId) || !Guid.TryParse(authUserId, out var authUserGuid))
             {
                 return Unauthorized(new { message = "User not authenticated" });
             }
 
-            var user = await _userRepository.GetUserByFirebaseUidAsync(firebaseUid);
-            if (user == null || user.StoreId == null)
+            var user = await _userRepository.GetUserByAuthUserIdAsync(authUserGuid);
+            if (user == null || user.ClientId == null)
             {
-                return BadRequest(new { message = "User is not associated with a store" });
+                return BadRequest(new { message = "User is not associated with a client" });
             }
 
-            var stock = await _stockRepository.GetStockByStoreIdAsync(user.StoreId.Value);
-            var orders = await _orderRepository.GetOrdersByStoreIdAsync(user.StoreId.Value, 20);
+            var stock = await _stockRepository.GetStockByClientIdAsync(user.ClientId.Value);
+            var orders = await _orderRepository.GetOrdersByClientIdAsync(user.ClientId.Value, 20);
 
             var stockList = stock.ToList();
             var orderList = orders.ToList();
 
-            var dashboard = new InventoryDashboardDto
+            var dashboard = new ClientInventoryDashboardDto
             {
-                StoreId = user.StoreId.Value,
-                StoreName = user.Store?.Name ?? "Unknown Store",
+                ClientId = user.ClientId.Value,
+                ClientName = user.Client?.Name ?? "Unknown Client",
                 Stock = stockList,
                 RecentOrders = orderList,
                 Metrics = new InventoryMetricsDto
                 {
                     TotalProducts = stockList.Count,
-                    TotalQuantity = stockList.Sum(s => s.Quantity),
-                    LowStockCount = stockList.Count(s => s.Quantity < 10),
-                    PendingOrders = orderList.Count(o => o.Status == "Pending"),
-                    TotalOrderValue = orderList.Where(o => o.Status != "Cancelled").Sum(o => o.TotalAmount)
+                    TotalQuantity = stockList.Sum(s => s.Stock),
+                    LowStockCount = stockList.Count(s => s.Stock < 10),
+                    PendingOrders = orderList.Count(o => o.Status == "Pending")
                 }
             };
 
@@ -76,23 +75,23 @@ public class StoreController : ControllerBase
     }
 
     /// <summary>
-    /// Update stock quantity for a product in the store owner's store
+    /// Update stock quantity for a product in the client's inventory
     /// </summary>
     [HttpPost("inventory/update")]
     public async Task<IActionResult> UpdateStock([FromBody] UpdateStockRequest request)
     {
         try
         {
-            var firebaseUid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(firebaseUid))
+            var authUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(authUserId) || !Guid.TryParse(authUserId, out var authUserGuid))
             {
                 return Unauthorized(new { message = "User not authenticated" });
             }
 
-            var user = await _userRepository.GetUserByFirebaseUidAsync(firebaseUid);
-            if (user == null || user.StoreId == null)
+            var user = await _userRepository.GetUserByAuthUserIdAsync(authUserGuid);
+            if (user == null || user.ClientId == null)
             {
-                return BadRequest(new { message = "User is not associated with a store" });
+                return BadRequest(new { message = "User is not associated with a client" });
             }
 
             if (request.Quantity < 0)
@@ -100,11 +99,10 @@ public class StoreController : ControllerBase
                 return BadRequest(new { message = "Quantity cannot be negative" });
             }
 
-            var success = await _stockRepository.UpdateStockQuantityAsync(
+            var success = await _stockRepository.UpdateClientStockQuantityAsync(
                 request.ProductId,
-                user.StoreId.Value,
-                request.Quantity,
-                user.Id
+                user.ClientId.Value,
+                request.Quantity
             );
 
             if (!success)
@@ -121,26 +119,26 @@ public class StoreController : ControllerBase
     }
 
     /// <summary>
-    /// Get recent orders for the store owner's store
+    /// Get recent orders for the client
     /// </summary>
     [HttpGet("orders")]
     public async Task<IActionResult> GetOrders([FromQuery] int limit = 50)
     {
         try
         {
-            var firebaseUid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(firebaseUid))
+            var authUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(authUserId) || !Guid.TryParse(authUserId, out var authUserGuid))
             {
                 return Unauthorized(new { message = "User not authenticated" });
             }
 
-            var user = await _userRepository.GetUserByFirebaseUidAsync(firebaseUid);
-            if (user == null || user.StoreId == null)
+            var user = await _userRepository.GetUserByAuthUserIdAsync(authUserGuid);
+            if (user == null || user.ClientId == null)
             {
-                return BadRequest(new { message = "User is not associated with a store" });
+                return BadRequest(new { message = "User is not associated with a client" });
             }
 
-            var orders = await _orderRepository.GetOrdersByStoreIdAsync(user.StoreId.Value, limit);
+            var orders = await _orderRepository.GetOrdersByClientIdAsync(user.ClientId.Value, limit);
             return Ok(orders);
         }
         catch (Exception ex)

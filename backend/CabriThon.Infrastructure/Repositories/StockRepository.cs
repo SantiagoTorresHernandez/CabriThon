@@ -7,12 +7,14 @@ namespace CabriThon.Infrastructure.Repositories;
 
 public interface IStockRepository
 {
-    Task<IEnumerable<StockDto>> GetStockByStoreIdAsync(Guid storeId);
-    Task<IEnumerable<StockDto>> GetAllStockAsync();
-    Task<IEnumerable<StockDto>> GetDistributionCenterStockAsync();
-    Task<Stock?> GetStockByProductAndStoreAsync(Guid productId, Guid storeId);
-    Task<bool> UpdateStockQuantityAsync(Guid productId, Guid storeId, int quantity, Guid? updatedBy);
-    Task<int> GetAvailableStockForProductAsync(Guid productId, Guid? storeId = null);
+    Task<IEnumerable<InventoryClientDto>> GetStockByClientIdAsync(int clientId);
+    Task<IEnumerable<InventoryClientDto>> GetAllClientStockAsync();
+    Task<IEnumerable<InventoryCediDto>> GetDistributionCenterStockAsync();
+    Task<InventoryClient?> GetClientStockByProductAndClientAsync(int productId, int clientId);
+    Task<InventoryCedi?> GetCediStockByProductAsync(int productId);
+    Task<bool> UpdateClientStockQuantityAsync(int productId, int clientId, int quantity);
+    Task<bool> UpdateCediStockQuantityAsync(int productId, int quantity);
+    Task<int> GetAvailableStockForProductAsync(int productId, int? clientId = null);
 }
 
 public class StockRepository : IStockRepository
@@ -24,90 +26,101 @@ public class StockRepository : IStockRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<StockDto>> GetStockByStoreIdAsync(Guid storeId)
+    public async Task<IEnumerable<InventoryClientDto>> GetStockByClientIdAsync(int clientId)
     {
         using var connection = _context.CreateConnection();
         var query = @"
-            SELECT s.id, s.product_id as ProductId, p.name as ProductName, p.sku as ProductSku,
-                   s.store_id as StoreId, st.name as StoreName, s.quantity,
-                   s.is_distribution_center_stock as IsDistributionCenterStock,
-                   s.updated_at as UpdatedAt
-            FROM stock s
-            INNER JOIN products p ON s.product_id = p.id
-            INNER JOIN stores st ON s.store_id = st.id
-            WHERE s.store_id = @StoreId
+            SELECT ic.inventory_client_id as InventoryClientId, 
+                   ic.product_id as ProductId, p.name as ProductName,
+                   ic.client_id as ClientId, c.name as ClientName,
+                   ic.stock, ic.warehouse_location as WarehouseLocation,
+                   ic.last_updated as LastUpdated
+            FROM inventory_client ic
+            INNER JOIN product p ON ic.product_id = p.product_id
+            INNER JOIN client c ON ic.client_id = c.client_id
+            WHERE ic.client_id = @ClientId
             ORDER BY p.name";
         
-        return await connection.QueryAsync<StockDto>(query, new { StoreId = storeId });
+        return await connection.QueryAsync<InventoryClientDto>(query, new { ClientId = clientId });
     }
 
-    public async Task<IEnumerable<StockDto>> GetAllStockAsync()
+    public async Task<IEnumerable<InventoryClientDto>> GetAllClientStockAsync()
     {
         using var connection = _context.CreateConnection();
         var query = @"
-            SELECT s.id, s.product_id as ProductId, p.name as ProductName, p.sku as ProductSku,
-                   s.store_id as StoreId, st.name as StoreName, s.quantity,
-                   s.is_distribution_center_stock as IsDistributionCenterStock,
-                   s.updated_at as UpdatedAt
-            FROM stock s
-            INNER JOIN products p ON s.product_id = p.id
-            INNER JOIN stores st ON s.store_id = st.id
-            ORDER BY st.name, p.name";
+            SELECT ic.inventory_client_id as InventoryClientId, 
+                   ic.product_id as ProductId, p.name as ProductName,
+                   ic.client_id as ClientId, c.name as ClientName,
+                   ic.stock, ic.warehouse_location as WarehouseLocation,
+                   ic.last_updated as LastUpdated
+            FROM inventory_client ic
+            INNER JOIN product p ON ic.product_id = p.product_id
+            INNER JOIN client c ON ic.client_id = c.client_id
+            ORDER BY c.name, p.name";
         
-        return await connection.QueryAsync<StockDto>(query);
+        return await connection.QueryAsync<InventoryClientDto>(query);
     }
 
-    public async Task<IEnumerable<StockDto>> GetDistributionCenterStockAsync()
+    public async Task<IEnumerable<InventoryCediDto>> GetDistributionCenterStockAsync()
     {
         using var connection = _context.CreateConnection();
         var query = @"
-            SELECT s.id, s.product_id as ProductId, p.name as ProductName, p.sku as ProductSku,
-                   s.store_id as StoreId, st.name as StoreName, s.quantity,
-                   s.is_distribution_center_stock as IsDistributionCenterStock,
-                   s.updated_at as UpdatedAt
-            FROM stock s
-            INNER JOIN products p ON s.product_id = p.id
-            INNER JOIN stores st ON s.store_id = st.id
-            WHERE s.is_distribution_center_stock = true
+            SELECT ic.inventory_cedi_id as InventoryCediId, 
+                   ic.product_id as ProductId, p.name as ProductName,
+                   ic.stock, ic.warehouse_location as WarehouseLocation,
+                   ic.last_updated as LastUpdated
+            FROM inventory_cedi ic
+            INNER JOIN product p ON ic.product_id = p.product_id
             ORDER BY p.name";
         
-        return await connection.QueryAsync<StockDto>(query);
+        return await connection.QueryAsync<InventoryCediDto>(query);
     }
 
-    public async Task<Stock?> GetStockByProductAndStoreAsync(Guid productId, Guid storeId)
+    public async Task<InventoryClient?> GetClientStockByProductAndClientAsync(int productId, int clientId)
     {
         using var connection = _context.CreateConnection();
         var query = @"
-            SELECT id, product_id as ProductId, store_id as StoreId, quantity,
-                   is_distribution_center_stock as IsDistributionCenterStock,
-                   last_updated_by as LastUpdatedBy, created_at as CreatedAt, 
-                   updated_at as UpdatedAt
-            FROM stock
-            WHERE product_id = @ProductId AND store_id = @StoreId";
+            SELECT inventory_client_id as InventoryClientId, product_id as ProductId,
+                   client_id as ClientId, stock, warehouse_location as WarehouseLocation,
+                   last_updated as LastUpdated
+            FROM inventory_client
+            WHERE product_id = @ProductId AND client_id = @ClientId";
         
-        return await connection.QueryFirstOrDefaultAsync<Stock>(query, 
-            new { ProductId = productId, StoreId = storeId });
+        return await connection.QueryFirstOrDefaultAsync<InventoryClient>(query, 
+            new { ProductId = productId, ClientId = clientId });
     }
 
-    public async Task<bool> UpdateStockQuantityAsync(Guid productId, Guid storeId, int quantity, Guid? updatedBy)
+    public async Task<InventoryCedi?> GetCediStockByProductAsync(int productId)
+    {
+        using var connection = _context.CreateConnection();
+        var query = @"
+            SELECT inventory_cedi_id as InventoryCediId, product_id as ProductId,
+                   stock, warehouse_location as WarehouseLocation,
+                   last_updated as LastUpdated
+            FROM inventory_cedi
+            WHERE product_id = @ProductId";
+        
+        return await connection.QueryFirstOrDefaultAsync<InventoryCedi>(query, new { ProductId = productId });
+    }
+
+    public async Task<bool> UpdateClientStockQuantityAsync(int productId, int clientId, int quantity)
     {
         using var connection = _context.CreateConnection();
         
         // Check if stock record exists
-        var existingStock = await GetStockByProductAndStoreAsync(productId, storeId);
+        var existingStock = await GetClientStockByProductAndClientAsync(productId, clientId);
         
         if (existingStock != null)
         {
             // Update existing stock
             var updateQuery = @"
-                UPDATE stock 
-                SET quantity = @Quantity, 
-                    last_updated_by = @UpdatedBy,
-                    updated_at = NOW()
-                WHERE product_id = @ProductId AND store_id = @StoreId";
+                UPDATE inventory_client 
+                SET stock = @Quantity, 
+                    last_updated = NOW()
+                WHERE product_id = @ProductId AND client_id = @ClientId";
             
             var rowsAffected = await connection.ExecuteAsync(updateQuery, 
-                new { ProductId = productId, StoreId = storeId, Quantity = quantity, UpdatedBy = updatedBy });
+                new { ProductId = productId, ClientId = clientId, Quantity = quantity });
             
             return rowsAffected > 0;
         }
@@ -115,39 +128,73 @@ public class StockRepository : IStockRepository
         {
             // Insert new stock record
             var insertQuery = @"
-                INSERT INTO stock (product_id, store_id, quantity, last_updated_by, is_distribution_center_stock)
-                SELECT @ProductId, @StoreId, @Quantity, @UpdatedBy, st.is_distribution_center
-                FROM stores st
-                WHERE st.id = @StoreId";
+                INSERT INTO inventory_client (product_id, client_id, stock, last_updated)
+                VALUES (@ProductId, @ClientId, @Quantity, NOW())";
             
             var rowsAffected = await connection.ExecuteAsync(insertQuery, 
-                new { ProductId = productId, StoreId = storeId, Quantity = quantity, UpdatedBy = updatedBy });
+                new { ProductId = productId, ClientId = clientId, Quantity = quantity });
             
             return rowsAffected > 0;
         }
     }
 
-    public async Task<int> GetAvailableStockForProductAsync(Guid productId, Guid? storeId = null)
+    public async Task<bool> UpdateCediStockQuantityAsync(int productId, int quantity)
+    {
+        using var connection = _context.CreateConnection();
+        
+        var existingStock = await GetCediStockByProductAsync(productId);
+        
+        if (existingStock != null)
+        {
+            var updateQuery = @"
+                UPDATE inventory_cedi 
+                SET stock = @Quantity, 
+                    last_updated = NOW()
+                WHERE product_id = @ProductId";
+            
+            var rowsAffected = await connection.ExecuteAsync(updateQuery, 
+                new { ProductId = productId, Quantity = quantity });
+            
+            return rowsAffected > 0;
+        }
+        else
+        {
+            var insertQuery = @"
+                INSERT INTO inventory_cedi (product_id, stock, last_updated)
+                VALUES (@ProductId, @Quantity, NOW())";
+            
+            var rowsAffected = await connection.ExecuteAsync(insertQuery, 
+                new { ProductId = productId, Quantity = quantity });
+            
+            return rowsAffected > 0;
+        }
+    }
+
+    public async Task<int> GetAvailableStockForProductAsync(int productId, int? clientId = null)
     {
         using var connection = _context.CreateConnection();
         
         string query;
         object parameters;
         
-        if (storeId.HasValue)
+        if (clientId.HasValue)
         {
             query = @"
-                SELECT COALESCE(SUM(quantity), 0)
-                FROM stock
-                WHERE product_id = @ProductId AND store_id = @StoreId";
-            parameters = new { ProductId = productId, StoreId = storeId.Value };
+                SELECT COALESCE(stock, 0)
+                FROM inventory_client
+                WHERE product_id = @ProductId AND client_id = @ClientId";
+            parameters = new { ProductId = productId, ClientId = clientId.Value };
         }
         else
         {
+            // Return total stock across all clients + CEDI
             query = @"
-                SELECT COALESCE(SUM(quantity), 0)
-                FROM stock
-                WHERE product_id = @ProductId";
+                SELECT COALESCE(SUM(stock), 0)
+                FROM (
+                    SELECT stock FROM inventory_client WHERE product_id = @ProductId
+                    UNION ALL
+                    SELECT stock FROM inventory_cedi WHERE product_id = @ProductId
+                ) as total_stock";
             parameters = new { ProductId = productId };
         }
         

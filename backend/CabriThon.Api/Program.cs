@@ -58,9 +58,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Configure Authorization Policies
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("StoreOwner", policy =>
+    options.AddPolicy("ClientOwner", policy =>
         policy.RequireAuthenticatedUser()
-              .RequireClaim("role", "StoreOwner", "Admin"));
+              .RequireClaim("role", "ClientOwner", "Admin"));
     
     options.AddPolicy("Admin", policy =>
         policy.RequireAuthenticatedUser()
