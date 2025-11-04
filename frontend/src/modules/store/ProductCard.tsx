@@ -4,7 +4,9 @@ import './ProductCard.css';
 interface Product {
   id: string;
   name: string;
-  description?: string;
+  description: string;
+  sku: string;
+  category: string;
   price: number;
   imageUrl?: string;
   availableStock?: number;
@@ -40,9 +42,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
       <div className="product-details">
         <h3 className="product-name">{product.name}</h3>
         
-        {product.description && (
-          <p className="product-description">{product.description}</p>
-        )}
+        <p className="product-description">{product.description}</p>
 
         <div className="product-price">${product.price.toFixed(2)}</div>
 
