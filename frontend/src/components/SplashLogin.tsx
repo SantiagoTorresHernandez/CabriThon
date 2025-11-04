@@ -305,7 +305,7 @@ export default function SplashLogin({ onLogin, isLoading = false }: SplashLoginP
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2 text-xs text-gray-600 select-none">
                     <input type="checkbox" className="h-3.5 w-3.5 rounded border-gray-300 text-[#29BF12] focus:ring-[#29BF12]" />
-                    recuerdame
+                    Recuerdame
                   </label>
                 </div>
 
