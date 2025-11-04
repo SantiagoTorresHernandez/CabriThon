@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using CabriThon.Infrastructure.Data;
 using CabriThon.Infrastructure.Repositories;
+using CabriThon.Infrastructure.Services;
+using CabriThon.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +37,11 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IDataExportRepository, DataExportRepository>();
+
+// Register external services
+builder.Services.AddHttpClient<IExternalAiService, ExternalAiService>();
+builder.Services.AddScoped<IExternalAiService, ExternalAiService>();
 
 // Configure Supabase JWT Authentication
 var jwtSecretKey = builder.Configuration["JwtSettings:SecretKey"];
@@ -101,6 +108,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
+
+// API key authentication for data export endpoints
+app.UseMiddleware<ApiKeyAuthenticationMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
