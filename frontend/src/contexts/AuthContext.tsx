@@ -19,13 +19,13 @@ interface AuthContextType {
 const TEST_USERS = [
   {
     email: 'test@gmail.com',
-    password: '12345',
+    password: 'DigitalNest2025',
     role: 'Customer',
     displayName: 'Test User',
   },
   {
     email: 'admin@gmail.com',
-    password: '12345',
+    password: 'DigitalNest2025',
     role: 'Admin',
     displayName: 'Admin User',
   },

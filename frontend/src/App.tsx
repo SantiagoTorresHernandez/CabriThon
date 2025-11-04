@@ -16,6 +16,7 @@ import Store from './modules/store/Store';
 import StoreOwnerDashboard from './modules/owner/StoreOwnerDashboard';
 import AdminDashboard from './modules/admin/AdminDashboard';
 import { CPGDashboard } from './components/CPGDashboard';
+import { ChatBot } from './components/ChatBot';
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -109,6 +110,7 @@ function AppRoutes() {
   return (
     <>
       {currentUser && <Header />}
+      {currentUser && <ChatBot />}
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={currentUser ? (userRole === 'Admin' ? <Navigate to="/cpg" /> : <Store />) : <Navigate to="/login" />} />
