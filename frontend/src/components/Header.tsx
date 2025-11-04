@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Header.css';
+import Logo from './Logo';
 
 const Header: React.FC = () => {
   const { currentUser, userRole, logout } = useAuth();
@@ -10,35 +11,35 @@ const Header: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/');
+      navigate('/login');
     } catch (error) {
       console.error('Failed to log out:', error);
     }
   };
 
   return (
-    <header className="header">
+    <header className="header" style={{ backdropFilter: 'saturate(150%) blur(6px)' }}>
       <div className="container header-content">
-        <Link to="/" className="logo">
-          <h1>CabriThon</h1>
+        <Link to="/" className="logo" aria-label="Inicio">
+          <Logo />
         </Link>
 
-        <nav className="nav" aria-label="Main navigation">
+        <nav className="nav" aria-label="Navegación principal">
           <Link to="/" className="nav-link">
-            Store
+            Tienda
           </Link>
 
           {currentUser ? (
             <>
               {userRole === 'Admin' && (
                 <Link to="/admin" className="nav-link">
-                  Admin Dashboard
+                  Administrador
                 </Link>
               )}
 
               {userRole === 'StoreOwner' && (
                 <Link to="/owner" className="nav-link">
-                  My Store
+                  Mi Tienda
                 </Link>
               )}
 
@@ -48,12 +49,12 @@ const Header: React.FC = () => {
               </div>
 
               <button onClick={handleLogout} className="btn btn-secondary">
-                Logout
+                Salir
               </button>
             </>
           ) : (
             <Link to="/login" className="btn btn-primary">
-              Login
+              Iniciar sesión
             </Link>
           )}
         </nav>

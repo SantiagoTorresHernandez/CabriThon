@@ -1,22 +1,35 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import {
-  User,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-  signOut,
-  onAuthStateChanged,
-} from 'firebase/auth';
-import { auth } from '../config/firebase';
+
+// Mock user type for local testing
+interface MockUser {
+  uid: string;
+  email: string;
+  displayName: string;
+}
 
 interface AuthContextType {
-  currentUser: User | null;
+  currentUser: MockUser | null;
   userRole: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
+
+// Test user credentials
+const TEST_USERS = [
+  {
+    email: 'test@gmail.com',
+    password: '12345',
+    role: 'Customer',
+    displayName: 'Test User',
+  },
+  {
+    email: 'admin@gmail.com',
+    password: '12345',
+    role: 'Admin',
+    displayName: 'Admin User',
+  },
+];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -33,41 +46,52 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<MockUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const user = TEST_USERS.find(u => u.email === email && u.password === password);
+    
+    if (user) {
+      const mockUser: MockUser = {
+        uid: `${user.role.toLowerCase()}-user-123`,
+        email: user.email,
+        displayName: user.displayName,
+      };
+      setCurrentUser(mockUser);
+      setUserRole(user.role);
+      // Store in localStorage for persistence
+      localStorage.setItem('mockUser', JSON.stringify(mockUser));
+      localStorage.setItem('mockUserRole', user.role);
+    } else {
+      throw new Error('Invalid email or password');
+    }
   };
 
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  };
 
   const logout = async () => {
-    await signOut(auth);
+    setCurrentUser(null);
     setUserRole(null);
+    localStorage.removeItem('mockUser');
+    localStorage.removeItem('mockUserRole');
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      
-      if (user) {
-        // Get custom claims (role)
-        const idTokenResult = await user.getIdTokenResult();
-        const role = idTokenResult.claims.role as string || 'Customer';
-        setUserRole(role);
-      } else {
-        setUserRole(null);
+    // Check for persisted user on app load
+    const storedUser = localStorage.getItem('mockUser');
+    const storedRole = localStorage.getItem('mockUserRole');
+    if (storedUser) {
+      try {
+        const mockUser = JSON.parse(storedUser);
+        setCurrentUser(mockUser);
+        setUserRole(storedRole || 'Customer');
+      } catch (error) {
+        localStorage.removeItem('mockUser');
+        localStorage.removeItem('mockUserRole');
       }
-      
-      setLoading(false);
-    });
-
-    return unsubscribe;
+    }
+    setLoading(false);
   }, []);
 
   const value: AuthContextType = {
@@ -75,7 +99,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     userRole,
     loading,
     signIn,
-    signInWithGoogle,
     logout,
   };
 

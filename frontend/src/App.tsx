@@ -6,6 +6,7 @@ import './App.css';
 // Components
 import Header from './components/Header';
 import Login from './components/Login';
+import SplashLogin from './components/SplashLogin';
 import PrivateRoute from './components/PrivateRoute';
 
 // Modules
@@ -14,16 +15,17 @@ import StoreOwnerDashboard from './modules/owner/StoreOwnerDashboard';
 import AdminDashboard from './modules/admin/AdminDashboard';
 
 function AppRoutes() {
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole, signIn } = useAuth();
+  const location = window.location.pathname;
 
   return (
     <>
-      <Header />
+      {currentUser && <Header />}
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Store />} />
+        <Route path="/" element={currentUser ? <Store /> : <Navigate to="/login" />} />
         <Route path="/store" element={<Store />} />
-        <Route path="/login" element={currentUser ? <Navigate to="/dashboard" /> : <Login />} />
+        <Route path="/login" element={currentUser ? <Navigate to="/dashboard" /> : <SplashLogin onLogin={signIn} />} />
 
         {/* Protected Routes */}
         <Route
