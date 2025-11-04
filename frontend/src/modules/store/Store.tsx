@@ -8,7 +8,7 @@ import './Store.css';
 interface Product {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   sku: string;
   category: string;
   price: number;
