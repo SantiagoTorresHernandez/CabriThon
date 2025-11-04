@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Header.css';
 import Logo from './Logo';
-import { Home, LayoutDashboard, Building2, User as UserIcon } from 'lucide-react';
+import { Home, LayoutDashboard, Building2, User as UserIcon, Menu, X } from 'lucide-react';
 
 const Header: React.FC = () => {
   const { currentUser, userRole, logout } = useAuth();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -38,7 +39,7 @@ const Header: React.FC = () => {
               ) : (
                 <>
                   <Link to="/" className="nav-link"><Home size={16} style={{marginRight:8}}/>Tienda</Link>
-                  <Link to="/owner" className="nav-link"><LayoutDashboard size={16} style={{marginRight:8}}/>Mi Tienda</Link>
+                  <Link to="/owner" className="nav-link"><LayoutDashboard size={16} style={{marginRight:8}}/>Panel</Link>
                   <Link to="/perfil" className="nav-link"><UserIcon size={16} style={{marginRight:8}}/>Perfil</Link>
                 </>
               )}
@@ -57,6 +58,44 @@ const Header: React.FC = () => {
             </Link>
           )}
         </nav>
+
+        {currentUser && (
+          <button className="burger-btn" aria-label="Abrir menú" onClick={() => setMenuOpen(true)}>
+            <Menu size={20} />
+          </button>
+        )}
+
+        {menuOpen && (
+          <>
+            <div className="mobile-menu-overlay" onClick={() => setMenuOpen(false)} />
+            <div className="mobile-menu">
+              <div className="mobile-menu-header">
+                <span>Menú</span>
+                <button aria-label="Cerrar menú" onClick={() => setMenuOpen(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="mobile-menu-content">
+                {userRole === 'Admin' ? (
+                  <>
+                    <Link to="/cpg" className="mobile-link" onClick={() => setMenuOpen(false)}><Building2 size={16} style={{marginRight:8}}/>Panel CPG</Link>
+                    <Link to="/perfil" className="mobile-link" onClick={() => setMenuOpen(false)}><UserIcon size={16} style={{marginRight:8}}/>Perfil</Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/" className="mobile-link" onClick={() => setMenuOpen(false)}><Home size={16} style={{marginRight:8}}/>Tienda</Link>
+                    <Link to="/owner" className="mobile-link" onClick={() => setMenuOpen(false)}><LayoutDashboard size={16} style={{marginRight:8}}/>Panel</Link>
+                    <Link to="/perfil" className="mobile-link" onClick={() => setMenuOpen(false)}><UserIcon size={16} style={{marginRight:8}}/>Perfil</Link>
+                  </>
+                )}
+                <div className="mobile-user">
+                  <span className="mobile-email">{currentUser?.email}</span>
+                  <button onClick={handleLogout} className="mobile-logout">Salir</button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </header>
   );

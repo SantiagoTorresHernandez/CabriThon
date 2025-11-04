@@ -33,7 +33,7 @@ const currency = (n: number) => `$${n.toFixed(2)}`;
 // Decorative floating leaf (hidden on mobile)
 function DecoLeaf({ left, top, rotation, delay = 0 }: { left: string; top: string; rotation: number; delay?: number }) {
   return (
-    <div className="hidden sm:block absolute" style={{ left, top, opacity: 0.15 }}>
+    <div className="hidden sm:block absolute z-0" style={{ left, top, opacity: 0.15 }}>
       <motion.div
         initial={{ y: 0, rotate: rotation }}
         animate={{ y: [0, -12, 0], rotate: [rotation, rotation + 4, rotation] }}
@@ -93,7 +93,7 @@ const Store: React.FC = () => {
   return (
     <main className="relative min-h-screen bg-gradient-to-br from-white via-green-50/30 to-yellow-50/30">
       {/* Background pattern */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none" aria-hidden>
+      <div className="absolute inset-0 opacity-5 pointer-events-none z-0" aria-hidden>
         <div className="absolute inset-0" style={{
           backgroundImage: `radial-gradient(circle at 20% 50%, #29BF12 1px, transparent 1px),
                            radial-gradient(circle at 80% 80%, #FFBA49 1px, transparent 1px)`,
@@ -106,9 +106,9 @@ const Store: React.FC = () => {
       <DecoLeaf left="8%" top="78%" rotation={18} delay={0.8} />
       <DecoLeaf left="88%" top="72%" rotation={-18} delay={1.2} />
 
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-6">
         {/* Search + Cart Row */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative group">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative group z-50">
           <div className="absolute -inset-[1px] rounded-xl bg-gradient-to-br from-[#29BF12]/40 via-[#FFBA49]/30 to-[#29BF12]/40 opacity-80 blur-[2px]" />
           <div className="relative bg-white/90 border border-white/50 rounded-xl px-4 sm:px-6 py-3 shadow-sm flex items-center justify-between gap-3 backdrop-blur-md">
             <div className="flex items-center gap-3 w-full">
@@ -132,7 +132,7 @@ const Store: React.FC = () => {
                 )}
 
                 {query.trim() && (
-                  <div className="absolute left-0 right-0 mt-2 z-20">
+                  <div className="absolute left-0 right-0 mt-2 z-50">
                     <div className="rounded-lg border border-white/60 bg-white/95 backdrop-blur-md shadow-2xl divide-y max-h-72 overflow-auto">
                       {filteredAll.length === 0 ? (
                         <div className="px-3 py-2 text-sm text-gray-600">resultado no encontrado, cambia tu busqueda.</div>
@@ -167,7 +167,52 @@ const Store: React.FC = () => {
           </div>
         </motion.div>
 
-        <div className="grid gap-6 sm:gap-8 mt-6">
+        {/* Search Results (on top) */}
+        {isSearching && (
+          <motion.section className="mt-6 relative z-30" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Resultados de búsqueda</h3>
+            {listAll.length === 0 ? (
+              <div className="text-sm text-gray-600">No hay resultados para "{query}"</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                {listAll.map(p => (
+                  <motion.div
+                    key={p.id}
+                    className="group rounded-lg overflow-hidden border border-gray-100 bg-white/90 backdrop-blur-sm shadow-sm"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <div className="relative h-32 overflow-hidden">
+                      <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                    </div>
+                    <div className="p-3">
+                      <div className="text-xs text-gray-500">{p.category}</div>
+                      <div className="text-sm font-semibold text-gray-900 min-h-[2.5rem]" style={{display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.name}</div>
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="text-[#1a8a0a] font-semibold">{currency(p.price)}</span>
+                        <span className="text-xs text-gray-500">Disp: {p.stock}</span>
+                      </div>
+                      <div className="mt-2">
+                        {cart[p.id] ? (
+                          <div className="inline-flex items-center gap-2">
+                            <button className="h-8 w-8 rounded bg-gray-100" onClick={()=>setQty(p.id, (cart[p.id]||0)-1)}>-</button>
+                            <span className="text-sm w-6 text-center">{cart[p.id]}</span>
+                            <button className="h-8 w-8 rounded bg-gray-100" onClick={()=>setQty(p.id, (cart[p.id]||0)+1)}>+</button>
+                          </div>
+                        ) : (
+                          <button className="h-9 px-3 rounded-lg bg-[#29BF12] text-white text-sm" onClick={()=>addToCart(p.id,1)}>Agregar</button>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.section>
+        )}
+
+        <div className="grid gap-6 sm:gap-8 mt-6 relative z-10">
           {/* Suggested Order */}
           <div className="relative group rounded-xl">
             <div className="absolute -inset-[1px] rounded-xl bg-gradient-to-br from-[#29BF12]/60 via-[#29BF12]/40 to-[#FFBA49]/50 opacity-80 blur-[2px]" />
@@ -243,42 +288,40 @@ const Store: React.FC = () => {
             </div>
           </section>
 
-          {/* Resultados / Todos */}
-          <section className="pb-24">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">{isSearching ? 'Resultados de búsqueda' : 'Todos los Productos'}</h3>
-            {isSearching && listAll.length === 0 ? (
-              <div className="text-sm text-gray-600">No hay resultados para "{query}"</div>
-            ) : (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              {listAll.map(p => (
-                <div key={p.id} className="group rounded-lg overflow-hidden border border-gray-100 bg-white/90 backdrop-blur-sm shadow-sm">
-                  <div className="relative h-32 overflow-hidden">
-                    <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition" />
-                  </div>
-                  <div className="p-3">
-                    <div className="text-xs text-gray-500">{p.category}</div>
-                    <div className="text-sm font-semibold text-gray-900 min-h-[2.5rem]" style={{display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.name}</div>
-                    <div className="mt-1 flex items-center justify-between">
-                      <span className="text-[#1a8a0a] font-semibold">{currency(p.price)}</span>
-                      <span className="text-xs text-gray-500">Disp: {p.stock}</span>
+          {/* Todos los Productos */}
+          {!isSearching ? (
+            <section className="pb-24">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Todos los Productos</h3>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                {DATA.map(p => (
+                  <div key={p.id} className="group rounded-lg overflow-hidden border border-gray-100 bg-white/90 backdrop-blur-sm shadow-sm">
+                    <div className="relative h-32 overflow-hidden">
+                      <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition" />
                     </div>
-                    <div className="mt-2">
-                      {cart[p.id] ? (
-                        <div className="inline-flex items-center gap-2">
-                          <button className="h-8 w-8 rounded bg-gray-100" onClick={()=>setQty(p.id, (cart[p.id]||0)-1)}>-</button>
-                          <span className="text-sm w-6 text-center">{cart[p.id]}</span>
-                          <button className="h-8 w-8 rounded bg-gray-100" onClick={()=>setQty(p.id, (cart[p.id]||0)+1)}>+</button>
-                        </div>
-                      ) : (
-                        <button className="h-9 px-3 rounded-lg bg-[#29BF12] text-white text-sm" onClick={()=>addToCart(p.id,1)}>Agregar</button>
-                      )}
+                    <div className="p-3">
+                      <div className="text-xs text-gray-500">{p.category}</div>
+                      <div className="text-sm font-semibold text-gray-900 min-h-[2.5rem]" style={{display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.name}</div>
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="text-[#1a8a0a] font-semibold">{currency(p.price)}</span>
+                        <span className="text-xs text-gray-500">Disp: {p.stock}</span>
+                      </div>
+                      <div className="mt-2">
+                        {cart[p.id] ? (
+                          <div className="inline-flex items-center gap-2">
+                            <button className="h-8 w-8 rounded bg-gray-100" onClick={()=>setQty(p.id, (cart[p.id]||0)-1)}>-</button>
+                            <span className="text-sm w-6 text-center">{cart[p.id]}</span>
+                            <button className="h-8 w-8 rounded bg-gray-100" onClick={()=>setQty(p.id, (cart[p.id]||0)+1)}>+</button>
+                          </div>
+                        ) : (
+                          <button className="h-9 px-3 rounded-lg bg-[#29BF12] text-white text-sm" onClick={()=>addToCart(p.id,1)}>Agregar</button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-            )}
+                ))}
+              </div>
           </section>
+          ) : null}
         </div>
       </div>
 
