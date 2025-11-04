@@ -33,7 +33,8 @@ public class StoreController : ControllerBase
     {
         try
         {
-            var authUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // Supabase JWT uses "sub" claim for user ID
+            var authUserId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(authUserId) || !Guid.TryParse(authUserId, out var authUserGuid))
             {
                 return Unauthorized(new { message = "User not authenticated" });
@@ -82,7 +83,8 @@ public class StoreController : ControllerBase
     {
         try
         {
-            var authUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // Supabase JWT uses "sub" claim for user ID
+            var authUserId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(authUserId) || !Guid.TryParse(authUserId, out var authUserGuid))
             {
                 return Unauthorized(new { message = "User not authenticated" });
@@ -126,7 +128,8 @@ public class StoreController : ControllerBase
     {
         try
         {
-            var authUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // Supabase JWT uses "sub" claim for user ID
+            var authUserId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(authUserId) || !Guid.TryParse(authUserId, out var authUserGuid))
             {
                 return Unauthorized(new { message = "User not authenticated" });

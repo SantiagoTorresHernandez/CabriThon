@@ -25,9 +25,11 @@ public class UserRepository : IUserRepository
     {
         using var connection = _context.CreateConnection();
         var query = @"
-            SELECT u.user_id as UserId, u.username, u.email, u.password_hash as PasswordHash,
-                   u.role_id as RoleId, u.client_id as ClientId, u.is_active as IsActive,
-                   u.created_at as CreatedAt, u.last_login as LastLogin, u.auth_user_id as AuthUserId
+            SELECT u.user_id as UserId, u.username as Username, u.email as Email, 
+                   u.password_hash as PasswordHash, u.role_id as RoleId, 
+                   u.client_id as ClientId, u.is_active as IsActive,
+                   u.created_at as CreatedAt, u.last_login as LastLogin, 
+                   u.auth_user_id as AuthUserId
             FROM app_user u
             WHERE u.auth_user_id = @AuthUserId";
         
@@ -38,9 +40,11 @@ public class UserRepository : IUserRepository
     {
         using var connection = _context.CreateConnection();
         var query = @"
-            SELECT u.user_id as UserId, u.username, u.email, u.password_hash as PasswordHash,
-                   u.role_id as RoleId, u.client_id as ClientId, u.is_active as IsActive,
-                   u.created_at as CreatedAt, u.last_login as LastLogin, u.auth_user_id as AuthUserId
+            SELECT u.user_id as UserId, u.username as Username, u.email as Email, 
+                   u.password_hash as PasswordHash, u.role_id as RoleId, 
+                   u.client_id as ClientId, u.is_active as IsActive,
+                   u.created_at as CreatedAt, u.last_login as LastLogin, 
+                   u.auth_user_id as AuthUserId
             FROM app_user u
             WHERE u.user_id = @Id";
         
@@ -51,9 +55,11 @@ public class UserRepository : IUserRepository
     {
         using var connection = _context.CreateConnection();
         var query = @"
-            SELECT u.user_id as UserId, u.username, u.email, u.password_hash as PasswordHash,
-                   u.role_id as RoleId, u.client_id as ClientId, u.is_active as IsActive,
-                   u.created_at as CreatedAt, u.last_login as LastLogin, u.auth_user_id as AuthUserId
+            SELECT u.user_id as UserId, u.username as Username, u.email as Email, 
+                   u.password_hash as PasswordHash, u.role_id as RoleId, 
+                   u.client_id as ClientId, u.is_active as IsActive,
+                   u.created_at as CreatedAt, u.last_login as LastLogin, 
+                   u.auth_user_id as AuthUserId
             FROM app_user u
             WHERE u.username = @Username";
         
@@ -63,15 +69,26 @@ public class UserRepository : IUserRepository
     public async Task<User?> CreateUserAsync(string username, string email, string passwordHash, int? roleId = null, int? clientId = null, Guid? authUserId = null)
     {
         using var connection = _context.CreateConnection();
+        // In Supabase, auth users are created via Supabase Auth API
+        // This method creates the corresponding profile in the app_user table
         var query = @"
             INSERT INTO app_user (username, email, password_hash, role_id, client_id, auth_user_id)
             VALUES (@Username, @Email, @PasswordHash, @RoleId, @ClientId, @AuthUserId)
-            RETURNING user_id as UserId, username, email, password_hash as PasswordHash,
-                      role_id as RoleId, client_id as ClientId, is_active as IsActive,
-                      created_at as CreatedAt, last_login as LastLogin, auth_user_id as AuthUserId";
+            RETURNING user_id as UserId, username as Username, email as Email, 
+                      password_hash as PasswordHash, role_id as RoleId, 
+                      client_id as ClientId, is_active as IsActive,
+                      created_at as CreatedAt, last_login as LastLogin, 
+                      auth_user_id as AuthUserId";
         
         return await connection.QueryFirstOrDefaultAsync<User>(query, 
-            new { Username = username, Email = email, PasswordHash = passwordHash, RoleId = roleId, ClientId = clientId, AuthUserId = authUserId });
+            new { 
+                Username = username, 
+                Email = email, 
+                PasswordHash = passwordHash, 
+                RoleId = roleId, 
+                ClientId = clientId, 
+                AuthUserId = authUserId 
+            });
     }
 }
 

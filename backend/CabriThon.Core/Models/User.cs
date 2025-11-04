@@ -1,5 +1,6 @@
 namespace CabriThon.Core.Models;
 
+// User model matching actual database schema (app_user table)
 public class User
 {
     public int UserId { get; set; }
@@ -11,7 +12,7 @@ public class User
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLogin { get; set; }
-    public Guid? AuthUserId { get; set; } // Firebase Auth UID
+    public Guid? AuthUserId { get; set; } // Supabase Auth UID
     
     // Navigation properties
     public Role? Role { get; set; }
@@ -34,5 +35,15 @@ public class Permission
     public string Name { get; set; } = string.Empty;
     public string? Module { get; set; }
     public string? Description { get; set; }
+}
+
+public class Client
+{
+    public int ClientId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? Address { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 

@@ -36,22 +36,31 @@ builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-// Configure Firebase JWT Authentication
-var firebaseProjectId = builder.Configuration["Firebase:ProjectId"];
-var firebaseIssuer = builder.Configuration["Firebase:Issuer"];
-var firebaseAudience = builder.Configuration["Firebase:Audience"];
+// Configure Supabase JWT Authentication
+var jwtSecretKey = builder.Configuration["JwtSettings:SecretKey"];
+var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
+var jwtAudience = builder.Configuration["JwtSettings:Audience"];
+
+if (string.IsNullOrEmpty(jwtSecretKey))
+{
+    throw new InvalidOperationException("JWT Secret Key is not configured");
+}
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = firebaseIssuer;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = firebaseIssuer,
+            ValidIssuer = jwtIssuer,
             ValidateAudience = true,
-            ValidAudience = firebaseAudience,
-            ValidateLifetime = true
+            ValidAudience = jwtAudience,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                System.Convert.FromBase64String(jwtSecretKey)
+            ),
+            ClockSkew = TimeSpan.Zero
         };
     });
 
@@ -60,11 +69,24 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("ClientOwner", policy =>
         policy.RequireAuthenticatedUser()
-              .RequireClaim("role", "ClientOwner", "Admin"));
+              .RequireAssertion(context =>
+              {
+                  // Check for role in user_metadata or app_metadata
+                  var role = context.User.FindFirst("role")?.Value 
+                          ?? context.User.FindFirst("user_role")?.Value
+                          ?? context.User.FindFirst("app_role")?.Value;
+                  return role == "StoreOwner" || role == "ClientOwner" || role == "Admin";
+              }));
     
     options.AddPolicy("Admin", policy =>
         policy.RequireAuthenticatedUser()
-              .RequireClaim("role", "Admin"));
+              .RequireAssertion(context =>
+              {
+                  var role = context.User.FindFirst("role")?.Value 
+                          ?? context.User.FindFirst("user_role")?.Value
+                          ?? context.User.FindFirst("app_role")?.Value;
+                  return role == "Admin";
+              }));
 });
 
 var app = builder.Build();
