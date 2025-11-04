@@ -3,17 +3,52 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Login.css';
 
+const translations = {
+  signIn: 'Iniciar Sesión',
+  email: 'Correo Electrónico',
+  password: 'Contraseña',
+  signingIn: 'Iniciando sesión...',
+  emailRequired: 'El correo es obligatorio',
+  emailInvalid: 'Por favor ingrese un correo válido (debe contener @)',
+  passwordRequired: 'La contraseña es obligatoria',
+  passwordShort: 'La contraseña debe tener al menos 5 caracteres',
+  signInError: 'Error al iniciar sesión. Por favor verifique sus credenciales.',
+};
+
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
+  const t = translations;
+
+  const validateForm = (): string => {
+    if (!email.trim()) {
+      return t.emailRequired;
+    }
+    if (!email.includes('@')) {
+      return t.emailInvalid;
+    }
+    if (!password) {
+      return t.passwordRequired;
+    }
+    if (password.length < 5) {
+      return t.passwordShort;
+    }
+    return '';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     
     try {
       setError('');
@@ -21,22 +56,8 @@ const Login: React.FC = () => {
       await signIn(email, password);
       navigate('/dashboard');
     } catch (error: any) {
-      setError('Failed to sign in. Please check your credentials.');
+      setError(t.signInError);
       console.error('Login error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setError('');
-      setLoading(true);
-      await signInWithGoogle();
-      navigate('/dashboard');
-    } catch (error: any) {
-      setError('Failed to sign in with Google.');
-      console.error('Google sign-in error:', error);
     } finally {
       setLoading(false);
     }
@@ -47,7 +68,7 @@ const Login: React.FC = () => {
       <div className="container">
         <div className="login-container">
           <div className="card login-card">
-            <h2 className="login-title">Sign In</h2>
+            <h2 className="login-title">{t.signIn}</h2>
             
             {error && (
               <div className="error-message" role="alert">
@@ -58,7 +79,7 @@ const Login: React.FC = () => {
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="email" className="form-label">
-                  Email Address
+                  {t.email}
                 </label>
                 <input
                   type="email"
@@ -66,7 +87,6 @@ const Login: React.FC = () => {
                   className="form-input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
                   disabled={loading}
                   aria-required="true"
                 />
@@ -74,7 +94,7 @@ const Login: React.FC = () => {
 
               <div className="form-group">
                 <label htmlFor="password" className="form-label">
-                  Password
+                  {t.password}
                 </label>
                 <input
                   type="password"
@@ -82,7 +102,6 @@ const Login: React.FC = () => {
                   className="form-input"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
                   disabled={loading}
                   aria-required="true"
                 />
@@ -93,21 +112,9 @@ const Login: React.FC = () => {
                 className="btn btn-primary btn-large"
                 disabled={loading}
               >
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? t.signingIn : t.signIn}
               </button>
             </form>
-
-            <div className="divider">
-              <span>OR</span>
-            </div>
-
-            <button
-              onClick={handleGoogleSignIn}
-              className="btn btn-secondary btn-large"
-              disabled={loading}
-            >
-              Sign in with Google
-            </button>
           </div>
         </div>
       </div>

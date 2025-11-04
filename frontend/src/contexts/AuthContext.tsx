@@ -8,9 +8,24 @@ interface AuthContextType {
   userRole: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
+
+// Test user credentials
+const TEST_USERS = [
+  {
+    email: 'test@gmail.com',
+    password: '12345',
+    role: 'Customer',
+    displayName: 'Test User',
+  },
+  {
+    email: 'admin@gmail.com',
+    password: '12345',
+    role: 'Admin',
+    displayName: 'Admin User',
+  },
+];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -30,7 +45,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -55,6 +70,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     await supabase.auth.signOut();
     setUserRole(null);
+    localStorage.removeItem('mockUser');
+    localStorage.removeItem('mockUserRole');
   };
 
   useEffect(() => {
@@ -102,7 +119,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     userRole,
     loading,
     signIn,
-    signInWithGoogle,
     logout,
   };
 
