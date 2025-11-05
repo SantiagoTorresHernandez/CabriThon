@@ -20,14 +20,49 @@ import { ChatBot } from './components/ChatBot';
 
 function ProfilePage() {
   const navigate = useNavigate();
-  const { logout, userRole } = useAuth();
-  const userData = {
-    initials: 'JD',
-    fullName: 'Juan Delgado',
-    storeName: 'Tienda La Esquina',
-    email: 'juan.delgado@email.com',
+  const { logout, userRole, currentUser } = useAuth();
+
+  // Datos de perfil por usuario (mock)
+  const PROFILES: Record<string, any> = {
+    'test@gmail.com': {
+      initials: 'JD',
+      fullName: 'Juan Delgado',
+      storeName: 'Tienda La Esquina',
+      phone: '+52 81 1234 5678',
+      city: 'Monterrey, NL',
+      tipoCuenta: 'Usuario',
+      joined: '2024-09-12',
+      pedidos: 42,
+    },
+    'admin@gmail.com': {
+      initials: 'AM',
+      fullName: 'Ana Martínez',
+      storeName: 'Geko CPG',
+      phone: '+52 55 9876 5432',
+      city: 'CDMX, MX',
+      tipoCuenta: 'Administrador',
+      joined: '2023-01-05',
+      cuentasGestionadas: 128,
+    },
   };
 
+  const emailKey = currentUser?.email || '';
+  const profile = PROFILES[emailKey] || {
+    initials: (currentUser?.displayName || 'U').slice(0,2).toUpperCase(),
+    fullName: currentUser?.displayName || 'Usuario',
+    storeName: userRole === 'Admin' ? 'Geko CPG' : 'Mi Tienda',
+    phone: '—',
+    city: '—',
+    tipoCuenta: userRole === 'Admin' ? 'Administrador' : 'Usuario',
+    joined: '—',
+  };
+
+  const userData = {
+    initials: profile.initials,
+    fullName: profile.fullName,
+    storeName: profile.storeName,
+    email: currentUser?.email || '—',
+  };
   const onLogout = async () => {
     try { await logout(); navigate('/login'); } catch {}
   };
@@ -72,6 +107,42 @@ function ProfilePage() {
             <div className="text-lg font-semibold text-gray-900">{userData.fullName}</div>
             <div className="text-sm text-gray-700">{userData.storeName}</div>
             <div className="text-sm text-gray-600">{userData.email}</div>
+          </Card>
+        </motion.div>
+
+        {/* Detalles adicionales */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }}>
+          <Card className="p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-lg border border-white/60 bg-white/80 p-3">
+                <div className="text-xs text-gray-500">Teléfono</div>
+                <div className="text-sm text-gray-900">{profile.phone}</div>
+              </div>
+              <div className="rounded-lg border border-white/60 bg-white/80 p-3">
+                <div className="text-xs text-gray-500">Ubicación</div>
+                <div className="text-sm text-gray-900">{profile.city}</div>
+              </div>
+              <div className="rounded-lg border border-white/60 bg-white/80 p-3">
+                <div className="text-xs text-gray-500">Tipo de Cuenta</div>
+                <div className="text-sm text-gray-900">{profile.tipoCuenta}</div>
+              </div>
+              <div className="rounded-lg border border-white/60 bg-white/80 p-3">
+                <div className="text-xs text-gray-500">Miembro desde</div>
+                <div className="text-sm text-gray-900">{profile.joined}</div>
+              </div>
+              {userRole !== 'Admin' && (
+                <div className="rounded-lg border border-white/60 bg-white/80 p-3">
+                  <div className="text-xs text-gray-500">Pedidos Realizados</div>
+                  <div className="text-sm text-gray-900">{profile.pedidos ?? '—'}</div>
+                </div>
+              )}
+              {userRole === 'Admin' && (
+                <div className="rounded-lg border border-white/60 bg-white/80 p-3">
+                  <div className="text-xs text-gray-500">Cuentas Gestionadas</div>
+                  <div className="text-sm text-gray-900">{profile.cuentasGestionadas ?? '—'}</div>
+                </div>
+              )}
+            </div>
           </Card>
         </motion.div>
 

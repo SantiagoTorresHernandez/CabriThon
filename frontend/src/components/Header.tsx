@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Header.css';
@@ -9,6 +9,26 @@ const Header: React.FC = () => {
   const { currentUser, userRole, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Lock body scroll when menu is open
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = original || '';
+    }
+    return () => { document.body.style.overflow = original || ''; };
+  }, [menuOpen]);
+
+  // Close on Escape key
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -68,7 +88,7 @@ const Header: React.FC = () => {
         {menuOpen && (
           <>
             <div className="mobile-menu-overlay" onClick={() => setMenuOpen(false)} />
-            <div className="mobile-menu">
+            <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
               <div className="mobile-menu-header">
                 <span>Menú</span>
                 <button aria-label="Cerrar menú" onClick={() => setMenuOpen(false)}>
